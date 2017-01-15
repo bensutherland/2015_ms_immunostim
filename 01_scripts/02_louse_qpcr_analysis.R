@@ -1,39 +1,56 @@
-#######  02 - LICE QPCR  ########
+# Lice qPCR analysis for Ssal/Lsal immunostim project
 
-# clean the space (remove #)
 # rm(list=ls())
 
-setwd("~/Documents/koop/immunostim/03_analysis/03_lice_qPCR_analysis")
-
-# install required packages
-source("http://bioconductor.org/biocLite.R")
+## Install packages
+# source("http://www.bioconductor.org/biocLite.R")
+# biocLite()
 biocLite("ReadqPCR")
 biocLite("NormqPCR") # do not load from source requiring compilation.
-library(ReadqPCR) # load the ReadqPCR library
+biocLite("limma")
+library(ReadqPCR)
 library(NormqPCR)
+library(limma) # needed for reading targets
+# libraries for manipulating strings
+library(stringi)
+library(tidyr)
 
-immuno.data <- read.qPCR("new-together_formatted-notdouble.txt")
 
-# inspection of batch object
+#### 2. Lice qPCR analysis ####
+# set working directory to the git repo main directory
+setwd("~/Documents/koop/immunostim/2017_ms_immunostim")
+
+#### 2.a. Input data and quality control ####
+# Load qPCR data
+immuno.data <- read.qPCR("02_raw_data/new-together_formatted-notdouble.txt")
+
+# Load microarray data
+probes.for.cor <- readRDS(file = "04_output/probes_for_cor.rds")
+
+# Load interpretation file
+targets <- readTargets("00_archive/Targets_2color_immunostim.csv", row.names="Name", sep = ",")
+
+
+# Inspection of batch object
 dim(immuno.data) # 30 features, 11 samples
 rownames(exprs(immuno.data)) # rows are genes (incl reps)
 colnames(exprs(immuno.data)) # cols are samples
 exprs(immuno.data) #lets you observe the raw Cts - note: there are two NA values for tech reps
 which(is.na(exprs(immuno.data))) # currently two NAs
 
-# combine technical replicates (and remove NAs)
+# Combine technical replicates (and remove NAs)
 combinedTechReps <- combineTechReps(immuno.data)
 combinedTechReps #this combined gene names
 exprs(combinedTechReps)  # gives Cts
 featureNames(combinedTechReps) # gives gene names
 which(is.na(exprs(combinedTechReps))) # in averaging, NAs are ignored; thus NAs removed
 
-# remove genes that are not to be used in the analysis
+# Remove genes that are not to be used in the analysis
 row.names(combinedTechReps) # gives gene names
 combinedTechReps <- combinedTechReps[-1,] # remove abcc1
 row.names(combinedTechReps)
 
-# geNORM
+# Calculate which are the best normalizers using geNORM
 normalizers <- selectHKs(combinedTechReps, method = "geNorm",
                          Symbols = featureNames(combinedTechReps),
                          minNrHK = 2, log = T) #selectHKs is run with log = TRUE since we are using Cq
@@ -43,21 +60,14 @@ ranks <- data.frame(c(1, 1:13), normalizers$ranking)
 hkgs <- c("flna", "rps20")
 dCt <- deltaCq(qPCRBatch =  combinedTechReps, hkgs = hkgs, calc="geo") # subtracts hkg values
 head(exprs(dCt)) # in dCt format (i.e. still a log2 value)
-# run statistics on log2 values, then transform to linear if desired
+# Note: run statistics on log2 values
 
-# create a dataframe using the dCt expression data, rows as samples, columns as genes
-results <- as.data.frame(t(exprs(dCt)))
+# Create a dataframe using the dCt expression data, rows as samples, columns as genes
+# Note: need to transform it to be negative as it is still higher = fewer transcripts
+results <- as.data.frame(t(exprs(dCt) * -1))
 head(results)
 
-### correlate microarray vs qPCR
-## first obtain data from microarray
-probes.for.cor <- readRDS(file = "~/Documents/koop/immunostim/03_analysis/03_lice_qPCR_analysis/probes.for.cor")
-targets <- readTargets("~/Documents/koop/immunostim/03_analysis/02_lice_txome_analysis/Targets_2color_immunostim.csv", row.names="Name", sep = ",")
-
-# load libraries for manipulating strings below:
-library(stringi)
-library(tidyr)
-
+#### 2.b. Correlate microarray vs qPCR ####
 # split rownames into Cy5 and Cy3
 probes.for.cor$sample <- rownames(probes.for.cor)
 # provide a match column to match with qPCR targets file
@@ -77,20 +87,35 @@ probes.for.cor.trimmed
 
 # in order:
 # C042R126 Esterase SG1
-# C088R114  Nuclear pore membrane glycoprotein 210
+# C088R114 Nuclear pore membrane glycoprotein 210
 # C263R087 Histone-lysine N-methyltransferase SETD7
 
 # models first to obtain R-squared
-sg1 <- lm(probes.for.cor.trimmed$C042R126 ~ results$sg1)
-pom210 <- lm(probes.for.cor.trimmed$C088R114 ~ results$pom210)
-setd7 <- lm(probes.for.cor.trimmed$C263R087 ~ results$setd7)
+## Still need to bring in the two datasets #TODO#
 
-sg1.adj.r.squared <- summary(sg1)$adj.r.squared
-pom210.adj.r.squared <- summary(pom210)$adj.r.squared
-setd7.adj.r.squared <- summary(setd7)$adj.r.squared
+# match together the two dataframes
+results$Name2match <- rownames(results)
+head(results)
+head(probes.for.cor.trimmed)
 
-rsq <- c(sg1.adj.r.squared, pom210.adj.r.squared, setd7.adj.r.squared)
-# names(rsq) <- c("sg1", "pom210", "setd7")
+collected.df <- merge(x = probes.for.cor.trimmed, y = results, by = "Name2match")
+names(collected.df)
+
+sg1 <- NULL; pom210 <- NULL; setd7 <- NULL
+gois <- c("sg1","pom210","setd7")
+probes <- c("C042R126","C088R114","C263R087")
+lm.results <- list()
+adj.r.sq.res <- NULL
+
+for(i in 1:3){
+  lm.results[[gois[i]]] <- lm(collected.df[,gois[i]] ~ collected.df[,probes[i]])
+  adj.r.sq.res[i] <- summary(lm.results[[i]])$adj.r.squared
+  names(adj.r.sq.res)[i] <- gois[i]
+}
+
+rsq <- adj.r.sq.res
+
+# Plot
 rsq
 
 # plot the correlation
@@ -113,6 +138,7 @@ plot(probes.for.cor.trimmed$C263R087 ~ {median(results$setd7)- results$setd7}, x
 text(x = xtxt, y = ytxt, labels = paste("R2 =", round(rsq[3], digits = 2)))
 
 
+#### 2.c. ddCt calculations ####
 ### follows is ddCt calculation within NormqPCR, and significance testing among groups in qPCR (not really what is necessary)
 
 # ## calculating ddCt within NormqPCR
