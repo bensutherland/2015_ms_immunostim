@@ -37,6 +37,8 @@ z-*
 02_raw_data/*.txt
 *.pdf
 .Rhistory
+.Rdata
 *.pdf
 *.png
 04_output/*
+.Rproj.user
