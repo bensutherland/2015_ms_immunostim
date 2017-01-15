@@ -116,26 +116,22 @@ for(i in 1:3){
 rsq <- adj.r.sq.res
 
 # Plot
-rsq
-
-# plot the correlation
-ylim.plot = c(-8,4)
-xlim.plot = c(-8,4)
+par(mfrow=c(1,3), mar = c(4,4,1,2))
 xtxt = -5.5
 ytxt = 3.7
-par(mfrow=c(1,3), mar = c(4,4,1,2))
-plot(probes.for.cor.trimmed$C042R126 ~ {median(results$sg1)- results$sg1}, xlab = "ddCt sg1", ylab = "microarray log2(sg1)", las = 1
-     , ylim = ylim.plot, xlim = xlim.plot
-)
-text(x = xtxt, y = ytxt, labels = paste("R2 =", round(rsq[1], digits = 2)))
-plot(probes.for.cor.trimmed$C088R114 ~ {median(results$pom21)- results$pom210}, xlab = "ddCt pom210", ylab = "microarray log2(pom210)", las = 1 
-     , ylim = ylim.plot, xlim = xlim.plot
-)
-text(x = xtxt, y = ytxt, labels = paste("R2 =", round(rsq[2], digits = 2)))
-plot(probes.for.cor.trimmed$C263R087 ~ {median(results$setd7)- results$setd7}, xlab = "ddCt setd7", ylab = "microarray log2(setd7)", las = 1
-     , ylim = ylim.plot, xlim = xlim.plot
-)
-text(x = xtxt, y = ytxt, labels = paste("R2 =", round(rsq[3], digits = 2)))
+
+for(i in 1:3){
+  plot(x = collected.df[,probes[i]]
+       , y = collected.df[,gois[i]]
+       , xlab = paste("log2(", probes[i],")", sep = "")
+       , ylab = paste("log2(",gois[i],")", sep = "")
+       , las = 1)
+  text(x = max(collected.df[,probes[i]])-2, 
+       y = min(collected.df[,gois[i]])+0.5
+       , labels = paste("R2 =", round(rsq[i], digits = 2)))
+}
+
+# save out as 8 x 4 plot
 
 
 #### 2.c. ddCt calculations ####
