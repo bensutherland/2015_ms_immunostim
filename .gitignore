@@ -37,3 +37,5 @@ z-*
 02_raw_data/*.txt
 *.pdf
 .Rhistory
+*.pdf
+*.png

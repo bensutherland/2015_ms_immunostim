@@ -1,61 +1,56 @@
 # Full analysis of the Ssal/Lsal immunostim project (v1.0)
-# Overview:
-#   01. Louse transcriptome analysis
-#   02. Louse qPCR analysis
-#   03. Salmon physiology and lice counts
-#   04. Salmon qPCR analysis
 
-# clean the space (remove #)
 # rm(list=ls())
 
-#
-#######  01 - LICE TXOME ANALYSIS  ######
-source("http://www.bioconductor.org/biocLite.R")
-biocLite()
-biocLite("limma")
+## Install packages
+# source("http://www.bioconductor.org/biocLite.R")
+# biocLite()
+# biocLite("limma")
 library(limma)
 
+
+#### 1. Lice transcriptome analysis ####
 # set working directory to the git repo main directory
 setwd("~/Documents/koop/immunostim/03_analysis/02_lice_txome_analysis")
 
 
-## input data ##
-# define targets file (interpretation file for microarray data)
-targets <- readTargets("Targets_2color_immunostim.csv", 
-                       # path = "./02_raw_data/lice_txome_data/",
-                       row.names="Name", sep = ",")
+#### 1.a. Input data and quality control ####
+# Load targets file (i.e. interpretation file)
+targets <- readTargets("00_archive/Targets_2color_immunostim.csv", row.names="Name", sep = ",")
 
-##read in datafiles (individual files are block and channel separated)
-RG <- read.maimages(path = 
-  "/Users/wayne/Documents/koop/immunostim/03_analysis/00_archive/louse-array-raw_data_and_sep/sep",
-    files = targets[,c("FileNameCy3","FileNameCy5")], 
+# Load data (block and channel sep.)
+RG <- read.maimages(path = "02_raw_data/",
+                    files = targets[,c("FileNameCy3","FileNameCy5")], 
                     source="imagene",
-                    columns = list(f="Signal Median", 
-                                   b="Background Median"))
+                    columns = list(f="Signal Median", b="Background Median"))
 dim(RG$R) # number of probes and number samples
 targets # see details on the samples
 
-# view density plot of unprocessed data
-plotDensities(RG, log=F)
+# View density plot of unprocessed data
+plotDensities(RG, log=F) # note that there is a bump at the saturation point
+plotDensities(RG, log=T) # this makes it easier to view the distribution, will produce NAs
 
-#set control status of probes
-spottypes <- readSpotTypes(file = "SpotTypes.txt")
+# Set probe control type
+spottypes <- readSpotTypes(file = "00_archive/SpotTypes.txt")
 RG$genes$Status <- controlStatus(types = spottypes, genes = RG)
 
+# Quality Control plots ##
+plotMA3by2(RG, path = "03_analysis/") #MA plots per array saved to working directory
+imageplot3by2(RG, path = "03_analysis/") #imageplots per array saved to working directory
 
-## quality control plots ##
-# plotMA3by2(RG) #MA plots per array saved to working directory
-# imageplot3by2(RG) #imageplots per array saved to working directory
-
-# boxplots of raw foreground/background for each channel
+# Boxplots non-normalized foreground/background per channel
 par(mfrow=c(2,2), mar= c(3,3,0.5,1) + 0.2, mgp = c(2,0.75,0))
 
 units <- c("R", "G", "Rb", "Gb")
 for(i in 1:4) {
-  boxplot(log2(RG[[units[i]]]), xaxt = "n", ylab = "log2(fluor. units)", xlab = "samples", main = units[i])
+  boxplot(log2(RG[[units[i]]]), 
+          xaxt = "n", 
+          ylab = "log2(fluor. units)", xlab = "samples", main = units[i])
 }
+print(dimnames(RG[["R"]])[[2]]) # this is the order of the plot
 
 
+#### 1.b. Quality filtering and normalization ####
 ## Data pre-processing ##
 par(mfrow=c(3,1), mar= c(3,3,0.5,1) + 0.2, mgp = c(2,0.75,0))
 ## set low expressed genes statement in $RG$genes$isexpr column
@@ -126,6 +121,7 @@ write.csv(MA.flt$genes, file = "background_immunostim.csv") #this can be used as
 plotDensities(MA.flt) ##densitiy plot of expression values
 
 
+#### 1.c. Differential expression analysis ####
 ### Differential Expression Analysis ## 
 design <- modelMatrix(targets, ref = "ref")
 attributes(design)
