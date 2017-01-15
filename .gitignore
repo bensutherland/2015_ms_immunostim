@@ -32,7 +32,8 @@ z-*
 *.fastq.gz
 *.fastq
 *~
-.Rproj.user
+*.Rproj
+.Rproj.user/
 02_raw_data/*.txt
 *.pdf
 .Rhistory
