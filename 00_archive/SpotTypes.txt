@@ -1,0 +1,1 @@
+SpotType	Gene ID	ControlType	ColorUnknown	CUST*	FALSE	blackDarkCorner	DarkCorner	neg	blueBrightCorner	GE_Bright*	pos	yellowNegative	*3xSLv1	neg	bluePositive	*E1A*	pos	red
