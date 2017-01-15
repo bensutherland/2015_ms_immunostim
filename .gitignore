@@ -39,3 +39,4 @@ z-*
 .Rhistory
 *.pdf
 *.png
+04_output/*
