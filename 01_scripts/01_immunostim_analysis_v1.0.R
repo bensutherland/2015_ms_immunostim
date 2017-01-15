@@ -18,7 +18,14 @@ setwd("~/Documents/koop/immunostim/03_analysis/02_lice_txome_analysis")
 # Load targets file (i.e. interpretation file)
 targets <- readTargets("00_archive/Targets_2color_immunostim.csv", row.names="Name", sep = ",")
 
-# Load data (block and channel sep.)
+# Load annotation file
+annot <- read.table("00_archive/koop_Lsal38K_2010-02-25b-short.txt",
+                    header=TRUE, sep = "\t") #note sep = "\t" is important when empty cells
+annot.df <- as.data.frame(annot)
+dim(annot.df) #38132 rows; 5 columns - note: this should match the length of MA.flt1 given above
+str(annot.df)
+
+# Load expression data (block and channel sep.)
 RG <- read.maimages(path = "02_raw_data/",
                     files = targets[,c("FileNameCy3","FileNameCy5")], 
                     source="imagene",
@@ -51,16 +58,16 @@ print(dimnames(RG[["R"]])[[2]]) # this is the order of the plot
 
 
 #### 1.b. Quality filtering and normalization ####
-## Data pre-processing ##
 par(mfrow=c(3,1), mar= c(3,3,0.5,1) + 0.2, mgp = c(2,0.75,0))
-## set low expressed genes statement in $RG$genes$isexpr column
+
+## Set low expressed genes statement in $RG$genes$isexpr column
 RG$genes$isexpr.R <- rowSums(RG$R >= 500) >= 3 #here, value >= 500 in at least 3 arrays
                       ##isexpr > 500 in at least 3 arrays, lowest sample size = 4 for ld.
 table(RG$genes$isexpr.R)
 RG$genes$isexpr.G <- rowSums(RG$G >= 500) >= 3 ##isexpr > 500 in at least 3 arrays
 table(RG$genes$isexpr.G)
 
-## identify saturated probes
+## Identify saturated probes
 RG$genes$satspot.R <- rowSums(RG$R == 65535) >= 11 #saturated in all arrays
 table(RG$genes$satspot.R) 
 RG$genes$satspot.G <- rowSums(RG$G == 65535) >= 11
@@ -69,6 +76,7 @@ table(RG$genes$satspot.G)
 ## background correction
 MA.bm <- backgroundCorrect(RG, method="minimum") 
 plotDensities(MA.bm)
+
 ## within array normalization (loess)
 MA.bmW <- normalizeWithinArrays(MA.bm, method="loess", weights=NULL)
 plotDensities(MA.bmW)
@@ -81,13 +89,7 @@ plotDensities(MA.bmWG)
 MA.flt1 <- MA.bmWG[MA.bmWG$genes$Status == "Unknown",]
 dim(MA.flt1) #38132 rows; 11 columns
 
-## read in annotation file
-annot <- read.table('koop_Lsal38K_2010-02-25b-short.txt',
-                    header=TRUE, sep = "\t") #note sep = "\t" is important when empty cells
-annot.df <- data.frame(annot)
-dim(annot.df) #38132 rows; 5 columns - note: this should match the length of MA.flt1 given above
-
-## attach annotation to the MA list
+## Attach annotation to the MA list
 MA.flt1$genes$spotID <- annot.df[,1] 
 MA.flt1$genes$description <- annot.df[,2] 
 MA.flt1$genes$GeneID <- annot.df[,4] 
@@ -95,11 +97,10 @@ MA.flt1$genes$GeneID <- annot.df[,4]
 ## Remove low expressed and saturated probes
 MA.flt <- MA.flt1[MA.flt1$genes$isexpr.R == "TRUE" & MA.flt1$genes$isexpr.G == "TRUE"
                   & MA.flt1$genes$satspot.R != "TRUE" & MA.flt1$genes$satspot.G != "TRUE",]
+dim(MA.flt)
 
-## Save out full MAlist
-write.csv(cbind(MA.flt$genes,MA.flt$M), "all_expr_data.csv", row.names=FALSE,
-            #header=TRUE
-          )
+## Save out quality filtered MAlist
+write.csv(cbind(MA.flt$genes,MA.flt$M), "all_expr_data.csv", row.names=FALSE)
 
 
 ### ASIDE ### this dataframe will be required for correlation with qPCR in section 2 ###
