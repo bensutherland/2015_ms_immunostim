@@ -99,27 +99,28 @@ MA.flt <- MA.flt1[MA.flt1$genes$isexpr.R == "TRUE" & MA.flt1$genes$isexpr.G == "
                   & MA.flt1$genes$satspot.R != "TRUE" & MA.flt1$genes$satspot.G != "TRUE",]
 dim(MA.flt)
 
+plotDensities(MA.flt) ##densitiy plot of expression values
+
+#### 1.c. Data extraction ####
 ## Save out quality filtered MAlist
-write.csv(cbind(MA.flt$genes,MA.flt$M), "all_expr_data.csv", row.names=FALSE)
+write.csv(cbind(MA.flt$genes,MA.flt$M), "04_output/all_expr_data.csv", row.names=FALSE)
 
-
-### ASIDE ### this dataframe will be required for correlation with qPCR in section 2 ###
-# and as such, obtain probes of interest
+## Select probe expression specifically for correlation with qPCR GOIs 
 probes.of.interest <- c("C042R126","C088R114","C263R087")
-probes.for.cor <- as.data.frame(cbind(MA.flt$M[MA.flt$genes[12] == probes.of.interest[1]], MA.flt$M[MA.flt$genes[12] == probes.of.interest[2]] ,
-      MA.flt$M[MA.flt$genes[12] == probes.of.interest[3]]))
+probes.for.cor <- as.data.frame(cbind(
+              MA.flt$M[MA.flt$genes[12] == probes.of.interest[1]]
+            , MA.flt$M[MA.flt$genes[12] == probes.of.interest[2]] 
+            , MA.flt$M[MA.flt$genes[12] == probes.of.interest[3]]))
 rownames(probes.for.cor) <- colnames(MA.flt$M)
 colnames(probes.for.cor) <- probes.of.interest
 probes.for.cor
 str(probes.for.cor)
 
-## Save out probes.for.cor to the qPCR directory:
-saveRDS(probes.for.cor, file = "~/Documents/koop/immunostim/03_analysis/03_lice_qPCR_analysis/probes.for.cor")
+## Save out probes.for.cor
+saveRDS(probes.for.cor, file = "04_output/probes_for_cor.rds")
 
 ## Save out background list for GO enrichment testing
-write.csv(MA.flt$genes, file = "background_immunostim.csv") #this can be used as the 'background list' for enrichment analysis
-
-plotDensities(MA.flt) ##densitiy plot of expression values
+write.csv(MA.flt$genes, file = "04_output/background_immunostim.csv")
 
 
 #### 1.c. Differential expression analysis ####
