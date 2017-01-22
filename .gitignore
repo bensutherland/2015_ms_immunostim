@@ -41,7 +41,8 @@ z-*
 *.pdf
 *.png
 04_output/*
-00_archive/*
 02_raw_data/*
 .Rproj.user
-
+SpotTypes.txt
+Targets_2color_immunostim.csv
+koop_Lsal38K_2010-02-25b-short.txt

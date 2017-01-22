@@ -1,0 +1,16 @@
+Go to the following website and download the files:
+# to upload #
+
+When you have finished downloading, put the following files in the following folders to run your analysis:    
+
+In `02_raw_data`, place    
+All block and channel separated and background adjusted microarray files, from  10037 to 10066 (total = 40 files)    
+immunostim_data-jan21-15.csv    
+new-together_formatted-notdouble.txt    
+salmon_qpcr-oct23-14-longform.csv    
+
+In `00_archive` place   
+SpotTypes.txt   
+Targets_2color_immunostim.csv    
+koop_Lsal38K_2010-02-25b-short.txt   
+
