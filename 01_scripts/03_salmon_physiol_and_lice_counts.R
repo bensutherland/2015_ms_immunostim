@@ -4,56 +4,62 @@
 
 # rm(list=ls())
 
-#### 3.a. Lice counts and fish physiology ####
-# rm(list=ls())
-setwd("~/Documents/koop/immunostim/03_analysis/04_salmon_physiol_analysis")
+#### 3. Lice counts and fish physiology ####
+setwd("~/Documents/koop/immunostim/2017_ms_immunostim/")
 
-# import physiological and infection data
-immuno.data <- read.csv(file = "immunostim_data-jan21-15.csv")
+#### 3.a. Import physiological and infection data ####
+immuno.data <- read.csv(file = "02_raw_data/immunostim_data-jan21-15.csv")
 dim(immuno.data) # 313 rows, 15 columns
 names(immuno.data)
 immuno.data[1:10,]
-levels(as.factor(immuno.data$time)) # confirms merge of time 3.1 and 3
+levels(as.factor(immuno.data$time)) # Note that data collection time 3.1 and 3.2 were merged
 
-# data setup, subset to remove the 'UNKN' treatment (tank control)
+# Set up data and remove the tank control (UNKN)
 immuno.data <- subset(immuno.data, immuno.data$treatment != "UNKN")
 immuno.data <- droplevels(immuno.data)
-levels(immuno.data$treatment) # confirm the tank control has now been removed
-immuno.data$treatment <- factor(immuno.data$treatment, 
-                                levels = c("cont","LD","HD")) #relevel to put the right order (control, lowdose, highdose)
+levels(immuno.data$treatment) # Confirm UNKN has now been removed
+immuno.data$treatment <- factor(immuno.data$treatment, levels = c("cont","LD","HD")) # Relevel to put the right order (control, lowdose, highdose)
+                                
 
-# weight at T(0) among tanks (confirm no difference at start) (use treatment groups instead of tanks for sample size)
-# there are not enough replicates at T0 for independent tank evaluation, so do it with treatment groups
+#### 3.b. Pre-experiment analysis ####
+# Eval weight at T0 to confirm no diff at start
+# Note: not enough reps for indep. tank eval, so do by group instead of by tank
+# Plot with individual records
 boxplot(immuno.data$weight.g[immuno.data$time==0] ~ 
           immuno.data$treatment[immuno.data$time==0], 
         na.rm =T, col = c("white","lightgrey","darkgrey"),
         xlab = "Tank ID", ylab = "Weight (g)")
 points(immuno.data$weight.g[immuno.data$time==0] ~ immuno.data$treatment[immuno.data$time==0]) # n = 6 (total = 18 samples)
+
 # model
 pre.inf.mod = aov(immuno.data$weight.g[immuno.data$time==0] ~ immuno.data$treatment[immuno.data$time==0])
-summary(pre.inf.mod) # no significant difference prior to infection (ANOVA p = 0.3)
+summary(pre.inf.mod) # no significant difference prior to infection (ANOVA p > 0.3)
 
-# weight after start of feed groups
-boxplot(immuno.data$weight.g[immuno.data$time!=0] ~ immuno.data$treatment[immuno.data$time!=0] * as.factor(immuno.data$time[immuno.data$time!=0])
+
+#### 3.b. Weight after start feed (not incl. T0) ####
+# Plot
+boxplot(immuno.data$weight.g[immuno.data$time!=0] 
+        ~ immuno.data$treatment[immuno.data$time!=0] * as.factor(immuno.data$time[immuno.data$time!=0])
         , col = c("white","lightgrey","darkgrey"))
-weight.mod <- aov(immuno.data$weight.g[immuno.data$time!=0] ~ immuno.data$treatment[immuno.data$time!=0] * as.factor(immuno.data$time[immuno.data$time!=0]))
-summary(weight.mod) # an effect of treatment ( p = 0.02)
+
+# Model
+weight.mod <- aov(immuno.data$weight.g[immuno.data$time!=0]
+                  ~ immuno.data$treatment[immuno.data$time!=0] * as.factor(immuno.data$time[immuno.data$time!=0]))
+summary(weight.mod) # Sig. fx of treatment (p = 0.02) and of time (p < 0.00001)
 TukeyHSD(weight.mod)
 
-# note that weight data was not collected for indiv. 13-22 from tanks 6, 7, 8, 9, 10 (T4)
-summary(is.na(immuno.data$weight.g[immuno.data$time==4])) # due to this, variable will be treated as LPF
+# Note: weight data missing in data collection for indiv. 13-22 from T4 (tanks 6, 7, 8, 9, 10) (noted in manuscript)
+summary(is.na(immuno.data$weight.g[immuno.data$time==4])) # due to this, variable will be treated as LPF, not using weight
 
-# test without time 0 or 4
-# weight after start of feed groups
+# Eval w/o T0 and T4 (due to missing data)
 boxplot(immuno.data$weight.g[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3] ~ immuno.data$treatment[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3] * 
           as.factor(immuno.data$time[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3])
         , col = c("white","lightgrey","darkgrey"))
-weight.mod.noT0orT4 <- aov(immuno.data$weight.g[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3] ~ immuno.data$treatment[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3] * 
-                             as.factor(immuno.data$time[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3]))
-summary(weight.mod.noT0orT4) # an effect of treatment ( p = 0.02)
-TukeyHSD(weight.mod.noT0orT4)
-
-
+weight.mod.noT0orT4 <- aov(immuno.data$weight.g[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3] 
+                          ~ immuno.data$treatment[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3]
+                          * as.factor(immuno.data$time[immuno.data$time==1 | immuno.data$time == 2 | immuno.data$time == 3]))
+summary(weight.mod.noT0orT4) # marginal effect of treatment ( p = 0.076)
+TukeyHSD(weight.mod.noT0orT4) # no sig pairwise b/w HD and contr at T1, T2, or T3 # but marginal overall HD-cont paired (p = 0.06)
 
 
 # Generate figure of lice per fish (T2-T4)
@@ -71,9 +77,11 @@ lpf.mod <- aov(immuno.data$per.fish.total[immuno.data$time > 1] ~ immuno.data$tr
                * as.factor(immuno.data$time[immuno.data$time > 1]))
 anova(lpf.mod) 
 #effect of treatment (p=6e-5); time (p = 3.5e-5); no interaction (p=0.4)
-TukeyHSD(lpf.mod) # can do pair-wise comparisons to see within a time point which values are different
+TukeyHSD(lpf.mod) # pair-wise comparisons to see within a time point which values are different
+# LD3 v cont3 (p = 0.027)
+# LD4 v cont4 (p = 0.016)
 
-# fold change bw cont and ld
+# Evaluate fold diff bw cont and ld
 mean(immuno.data$per.fish.total[immuno.data$time == 3 & immuno.data$treatment ==  "cont"])
 mean(immuno.data$per.fish.total[immuno.data$time == 3 & immuno.data$treatment ==  "LD"])
 1/(1.4/2.9) # 2.1-fold lower at time 3
@@ -81,8 +89,7 @@ mean(immuno.data$per.fish.total[immuno.data$time == 4 & immuno.data$treatment ==
 mean(immuno.data$per.fish.total[immuno.data$time == 4 & immuno.data$treatment ==  "LD"])
 1/(1.56/3.48) # 2.2-fold lower at time 4
 
-
-## are there significant differences in sex of lice between treatment groups?
+## Effect of lice sex bw treatment groups?
 names(immuno.data)
 
 # collect proportions
@@ -91,12 +98,13 @@ LD.ad.fem.4 <-  sum(immuno.data$body.ad.fem[immuno.data$time==4 & immuno.data$tr
 cont.ad.m.4 <- sum(immuno.data$body.ad.m[immuno.data$time==4 & immuno.data$treatment=="cont"], na.rm =T)
 cont.ad.fem.4 <- sum(immuno.data$body.ad.fem[immuno.data$time==4 & immuno.data$treatment=="cont"], na.rm =T)
 c(LD.ad.m.4, LD.ad.fem.4, cont.ad.m.4, cont.ad.fem.4)
-# at time 4, more males than females in the LD, and opposite in the control
+# At time 4, more males than females in the LD, and opposite in the control
+# Numbers are pretty low to determine this.
 
 LD.ad.m.3 <- sum(immuno.data$body.ad.m[immuno.data$time==3 & immuno.data$treatment=="LD"], na.rm =T)
 LD.ad.fem.3 <- sum(immuno.data$body.ad.fem[immuno.data$time==3 & immuno.data$treatment=="LD"], na.rm =T)
 cont.ad.m.3 <- sum(immuno.data$body.ad.m[immuno.data$time==3 & immuno.data$treatment=="cont"], na.rm =T)
 cont.ad.fem.3 <- sum(immuno.data$body.ad.fem[immuno.data$time==3 & immuno.data$treatment=="cont"], na.rm =T)
 c(LD.ad.m.3, LD.ad.fem.3, cont.ad.m.3, cont.ad.fem.3)
-# at time 3, there were equal proportions males and females in LD or control
-# since these two time points were only one week apart, the inconsistencies viewed between T3 and T4 in the sex ratios suggest there is no effect.
+# At time 3, there were equal proportions males and females in LD or control
+# Since these two time points were only one week apart, the inconsistencies viewed between T3 and T4 in the sex ratios suggest there is no effect.
