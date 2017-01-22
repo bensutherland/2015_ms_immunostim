@@ -42,5 +42,6 @@ z-*
 *.png
 04_output/*
 00_archive/*
+02_raw_data/*
 .Rproj.user
 
