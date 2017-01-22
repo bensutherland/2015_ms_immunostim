@@ -79,6 +79,7 @@ mod.test <- aov(salmon.gx$expr[salmon.gx$gene == "il-1" & salmon.gx$tissue == "s
                   salmon.gx$treatment[salmon.gx$gene == "il-1" & salmon.gx$tissue == "skin"]
                 * salmon.gx$time[salmon.gx$gene == "il-1" & salmon.gx$tissue == "skin"])  
 summary(mod.test)
+# so no sig fx of time (p = 0.92) and no sig interaction (p = 0.31)
 
 
 #### 4.d. Create supplemental plots ####
