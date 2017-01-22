@@ -41,4 +41,6 @@ z-*
 *.pdf
 *.png
 04_output/*
+00_archive/*
 .Rproj.user
+

@@ -3,6 +3,9 @@
 # rm(list=ls())
 setwd("~/Documents/koop/immunostim/03_analysis/05_salmon_qPCR_analysis")
 
+# todo: Add linear fold change of il-1b where refer to figure (second para in Salmon gene expression responses at L309
+
+
 # read in data
 salmon.gx <- read.csv(file = "salmon_qpcr-oct23-14-longform.csv")
 names(salmon.gx)

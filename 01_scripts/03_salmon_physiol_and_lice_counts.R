@@ -1,4 +1,10 @@
-#######  03 - LICE COUNTS & FISH PHYS   ############
+# Lice counts and fish physiology for the Ssal/Lsal immunostim project
+
+#ToDo: "The results show a significant treatment effect on weight with or without T4." -- is this correct (at L282)?
+
+# rm(list=ls())
+
+#### 3.a. Lice counts and fish physiology ####
 # rm(list=ls())
 setwd("~/Documents/koop/immunostim/03_analysis/04_salmon_physiol_analysis")
 

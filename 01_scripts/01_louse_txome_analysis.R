@@ -121,7 +121,7 @@ saveRDS(probes.for.cor, file = "04_output/probes_for_cor.rds")
 write.csv(MA.flt$genes, file = "04_output/background_immunostim.csv")
 
 
-#### 1.c. Differential expression analysis ####
+#### 1.d. Differential expression analysis ####
 ### Differential Expression Analysis ## 
 design <- modelMatrix(targets, ref = "ref")
 attributes(design)
